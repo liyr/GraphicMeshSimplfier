@@ -1,6 +1,7 @@
 #pragma once
 #include "Vec3f.h"
 #include <vector>
+#include "Matrix.h"
 
 namespace SimpleOBJ
 {
@@ -38,10 +39,12 @@ namespace SimpleOBJ
         void Destroy();
         bool LoadFromObj(const char* fn);
         bool SaveToObj(const char* fn);
-        
+        void simplify(const double ratio);
+
     protected:
         bool Parse(FILE* fp);
         bool CheckParse(int nVertices,std::vector<Array<int,3> > & vecTriangles);
+        Vec3f calNormal(int tri_num, double &d);
 
     protected:
 
@@ -50,5 +53,4 @@ namespace SimpleOBJ
         Vec3f*          m_pVertexList;
         Array<int,3>*   m_pTriangleList;
     };
-
 }

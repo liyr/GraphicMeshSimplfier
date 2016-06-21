@@ -1,7 +1,7 @@
 #include "SimpleObject.h"
 #include <vector>
+#include <queue>
 
-using namespace std;
 
 namespace SimpleOBJ
 {
@@ -267,6 +267,38 @@ namespace SimpleOBJ
         printf("Writing to %s successfully\n",fn);
         return true;
 
+    }
+
+    Vec3f CSimpleObject::calNormal(int tri_num, double &d)
+    {
+        auto v0 = m_pVertexList[m_pTriangleList[tri_num][0]],
+            v1 = m_pVertexList[m_pTriangleList[tri_num][1]],
+            v2 = m_pVertexList[m_pTriangleList[tri_num][2]];
+        Vec3f res = ((v1 - v0) % (v2 - v0));
+        res.Normalize();
+        d = -res | v0;
+        return res;
+    }
+
+    void CSimpleObject::simplify(const double ratio)
+    {
+        std::vector<std::pair<int, int>> pairs;
+        for (int i = 0; i < m_nVertices; ++i)
+            calQ_PrePair(i);
+        struct cmp {
+            bool operator()(const std::pair<int,int> &a, const std::pair<int, int> &b) const
+            {
+                return 0;
+            }
+        };
+        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, cmp> pq;
+
+        for(auto &ele: pairs)
+        {
+            pq.push(ele);
+        }
+        
+        for()
     }
 }
 

@@ -37,7 +37,7 @@ public:
     {
         return *this = *this * (1 / sqrt(x * x + y * y + z * z));
     }
-    double dot(const Vector3d &b) const
+    double operator | (const Vector3d &b) const
     {
         return x * b.x + y * b.y + z * b.z;
     }
@@ -47,7 +47,7 @@ public:
     }
     void calSphereRepre(Vector3d&normal, Vector3d&bi_normal, double &theta, double &phi) const
     {
-        Vector3d tmp(this->dot(normal), this->dot(bi_normal), this->dot(normal%bi_normal));
+        Vector3d tmp(this->operator|(normal), this->operator|(bi_normal), this->operator|(normal%bi_normal));
         theta = acos(tmp.x);
         phi = atan2(tmp.z, tmp.y);
     }
@@ -71,7 +71,7 @@ public:
 
         Vector3d out = (*this) * cos_ang;
 
-        temp = dot(axis);
+        temp = operator|(axis);
         temp = temp * (1.0 - cos_ang);
         out = out + axis * temp;
 
