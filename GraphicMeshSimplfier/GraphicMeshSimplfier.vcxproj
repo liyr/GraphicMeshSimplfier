@@ -120,6 +120,7 @@
     <ClInclude Include="Matrix.h" />
     <ClInclude Include="SimpleObject.h" />
     <ClInclude Include="Vec3f.h" />
+    <ClInclude Include="Vec4f.h" />
     <ClInclude Include="Vector3d.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

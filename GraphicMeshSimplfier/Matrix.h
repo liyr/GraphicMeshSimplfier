@@ -1,7 +1,7 @@
 #pragma once
-namespace SimpleOBJ{
-    class Vec3f;
-}
+
+
+class Vec4f;
 
 class Matrix
 {
@@ -9,10 +9,11 @@ class Matrix
 public:
     Matrix();
     ~Matrix();
-    Matrix operator+(const Matrix &p);
-    Matrix operator-(const Matrix &p);
+    Matrix operator+(const Matrix &p) const;
+    Matrix operator-(const Matrix &p) const;
     Matrix operator-();
-    Matrix operator*(const Matrix& p);
-    void mult(const SimpleOBJ::Vec3f & p, const double d, SimpleOBJ::Vec3f & res, double &resd);
+    Matrix operator*(const Matrix& p) const;
+    Vec4f operator*(const Vec4f& p) const;
+    friend Matrix mult(const Vec4f& p1, const Vec4f& p2);
 };
 

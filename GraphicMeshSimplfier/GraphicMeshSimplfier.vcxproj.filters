@@ -44,5 +44,8 @@
     <ClInclude Include="Matrix.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Vec4f.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

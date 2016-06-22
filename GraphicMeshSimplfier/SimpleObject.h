@@ -44,7 +44,7 @@ namespace SimpleOBJ
     protected:
         bool Parse(FILE* fp);
         bool CheckParse(int nVertices,std::vector<Array<int,3> > & vecTriangles);
-        Vec3f calNormal(int tri_num, double &d);
+        Vec4f calNormal(int tri_num);
 
     protected:
 

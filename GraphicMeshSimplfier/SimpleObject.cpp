@@ -1,6 +1,7 @@
 #include "SimpleObject.h"
 #include <vector>
 #include <queue>
+#include "Vec4f.h"
 
 
 namespace SimpleOBJ
@@ -269,22 +270,24 @@ namespace SimpleOBJ
 
     }
 
-    Vec3f CSimpleObject::calNormal(int tri_num, double &d)
+    Vec4f CSimpleObject::calNormal(int tri_num)
     {
         auto v0 = m_pVertexList[m_pTriangleList[tri_num][0]],
             v1 = m_pVertexList[m_pTriangleList[tri_num][1]],
             v2 = m_pVertexList[m_pTriangleList[tri_num][2]];
         Vec3f res = ((v1 - v0) % (v2 - v0));
         res.Normalize();
-        d = -res | v0;
-        return res;
+        double d = -res | v0;
+        Vec4f ans(res[0], res[1], res[2], d);
+        return ans;
     }
 
     void CSimpleObject::simplify(const double ratio)
     {
         std::vector<std::pair<int, int>> pairs;
         for (int i = 0; i < m_nVertices; ++i)
-            calQ_PrePair(i);
+        {
+        }
         struct cmp {
             bool operator()(const std::pair<int,int> &a, const std::pair<int, int> &b) const
             {
@@ -298,7 +301,7 @@ namespace SimpleOBJ
             pq.push(ele);
         }
         
-        for()
+        //for()
     }
 }
 

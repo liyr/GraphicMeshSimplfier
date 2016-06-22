@@ -18,12 +18,13 @@ namespace SimpleOBJ
         //Operators
 
         //Operator []
-        __forceinline float& operator [](int index)
+        virtual __forceinline float& operator [](int index)
         {
             assert(index>=0&&index<3);
             return _p[index];
         }
-        __forceinline const float& operator [](int index) const
+
+        virtual __forceinline const float& operator [](int index) const
         {
             assert(index>=0&&index<3);
             return _p[index];
