@@ -13,12 +13,12 @@ namespace SimpleOBJ
     public:
         T& operator[] (int i)
         {
-            ASSERT(i>=0&&i<N);
+            assert(i>=0&&i<N);
             return _p[i];
         }
         const T& operator[] (int i) const 
         {
-            ASSERT(i>=0&&i<N);
+            assert(i>=0&&i<N);
             return _p[i];
         }
 

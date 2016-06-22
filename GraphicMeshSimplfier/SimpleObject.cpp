@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "SimpleObject.h"
 #include <vector>
 #include <queue>
@@ -5,6 +7,38 @@
 #include "Matrix.h"
 #include <set>
 #include <map>
+
+double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
+{
+    double ans = q1.det3();
+    if (abs(ans) > 1e-2)
+    {
+        a[0] = -q1.det3(0) / ans;
+        a[1] = -q1.det3(1) / ans;
+        a[2] = -q1.det3(2) / ans;
+        return a | (q1 * a);
+    }
+    else
+    {
+        a[0] = ((c + d) / 2)[0];
+        a[1] = ((c + d) / 2)[1];
+        a[2] = ((c + d) / 2)[2];
+        return a | (q1 * a);
+    }
+}
+
+struct cmp {
+    static Matrix *Q;
+    static SimpleOBJ::Vec3f *m_pVertexList;
+    bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const
+    {
+        Matrix Q1 = Q[a.first] + Q[a.second], Q2 = Q[b.first] + Q[b.second];
+        Vec4f m(0, 0, 0), n(0, 0, 0);
+        return  calOptimal(Q1, m, m_pVertexList[a.first], m_pVertexList[a.second]) > calOptimal(Q2, m, m_pVertexList[b.first], m_pVertexList[b.second]);
+    }
+};
+Matrix *cmp::Q = 0;
+SimpleOBJ::Vec3f *cmp::m_pVertexList = 0;
 
 Matrix mult(const Vec4f& p1, const Vec4f& p2)
 {
@@ -46,7 +80,8 @@ namespace SimpleOBJ
 
     bool CSimpleObject::LoadFromObj(const char* fn)
     {
-        FILE* fp = fopen(fn,"r");
+        FILE* fp;
+        fopen_s(&fp, fn, "r");
         if(fp==NULL)
         {
             printf("Error: Loading %s failed.\n",fn);
@@ -294,32 +329,6 @@ namespace SimpleOBJ
         return ans;
     }
 
-    double calOptimal(Matrix q1, Vec4f &a)
-    {
-        double ans = q1.det3();
-        if(abs(ans) > 1e-2)
-        {
-            a[0] = q1.det3(0) / ans;
-            a[1] = q1.det3(1) / ans;
-            a[2] = q1.det3(2) / ans;
-            return a | (q1 * a);
-        }
-        else
-        {
-
-            return a | (q1 * a);
-        }
-    }
-
-    struct cmp {
-        static Matrix *Q;
-        bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const
-        {
-            Matrix Q1 = Q[a.first] + Q[a.second], Q2 = Q[b.first] + Q[b.second];
-            Vec4f m(0,0,0), n(0,0,0);
-            return  calOptimal(Q1, m) > calOptimal(Q2, m);
-        }
-    };
 
     CSimpleObject CSimpleObject::simplify(const double ratio)
     {
@@ -360,6 +369,7 @@ namespace SimpleOBJ
             pairs.insert({ sty,stz });
         }
         cmp::Q = Q;
+        cmp::m_pVertexList = m_pVertexList;
         std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, cmp> pq;
 
         for(auto &ele: pairs)
@@ -373,7 +383,7 @@ namespace SimpleOBJ
             pq.pop();
             Vec4f newVer(0, 0, 0);
             Matrix Q1 = Q[aim.first] + Q[aim.second];
-            calOptimal(Q1, newVer);
+            calOptimal(Q1, newVer, vecVertices[aim.first], vecVertices[aim.second]);
             vecVertices.push_back(newVer);
             for(auto &tri:ver2tri[aim.first])
             {
@@ -395,11 +405,20 @@ namespace SimpleOBJ
 
         CSimpleObject output;
         output.m_nVertices = vecVertices.end() - vecVertices.begin();
-
+        output.m_nTriangles = vecTriangles.end() - vecTriangles.begin();
 
 
         output.m_pVertexList = new Vec3f[output.m_nVertices];
         output.m_pTriangleList = new Array<int,3>[output.m_nTriangles];
+
+        for(int i = 0; i < output.m_nVertices; ++i)
+        {
+            output.m_pVertexList[i] = vecVertices[i];
+        }
+        for (int i = 0; i < output.m_nTriangles; ++i)
+        {
+            output.m_pTriangleList[i] = vecTriangles[i];
+        }
         return output;
     }
 }

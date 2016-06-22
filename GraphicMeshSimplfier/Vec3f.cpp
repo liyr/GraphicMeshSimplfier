@@ -152,7 +152,7 @@ namespace SimpleOBJ
 
     float Vec3f::operator | (const Vec3f&v) const
     {
-        float res;
+        float res = 0;
         for (int i = 0; i<_len; i++)
             res += (*this)[i] * v[i];
         return res;
