@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     double ratio = atof(argv[2]);
 
 
-    input.simplify(ratio);
+    output = input.simplify(ratio);
 
 
     if (!output.SaveToObj(argv[1])) std::cout << "error, save failed" << std::endl;

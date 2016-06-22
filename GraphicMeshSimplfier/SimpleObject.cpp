@@ -2,7 +2,19 @@
 #include <vector>
 #include <queue>
 #include "Vec4f.h"
+#include "Matrix.h"
+#include <set>
+#include <map>
 
+Matrix mult(const Vec4f& p1, const Vec4f& p2)
+{
+    Matrix res;
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            res.ele_[i][j] = p1[i] * p2[j];
+    return res;
+
+}
 
 namespace SimpleOBJ
 {
@@ -282,18 +294,72 @@ namespace SimpleOBJ
         return ans;
     }
 
-    void CSimpleObject::simplify(const double ratio)
+    double calOptimal(Matrix q1, Vec4f &a)
     {
-        std::vector<std::pair<int, int>> pairs;
-        for (int i = 0; i < m_nVertices; ++i)
+        double ans = q1.det3();
+        if(abs(ans) > 1e-2)
         {
+            a[0] = q1.det3(0) / ans;
+            a[1] = q1.det3(1) / ans;
+            a[2] = q1.det3(2) / ans;
+            return a | (q1 * a);
         }
-        struct cmp {
-            bool operator()(const std::pair<int,int> &a, const std::pair<int, int> &b) const
-            {
-                return 0;
-            }
-        };
+        else
+        {
+
+            return a | (q1 * a);
+        }
+    }
+
+    struct cmp {
+        static Matrix *Q;
+        bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const
+        {
+            Matrix Q1 = Q[a.first] + Q[a.second], Q2 = Q[b.first] + Q[b.second];
+            Vec4f m(0,0,0), n(0,0,0);
+            return  calOptimal(Q1, m) > calOptimal(Q2, m);
+        }
+    };
+
+    CSimpleObject CSimpleObject::simplify(const double ratio)
+    {
+        std::vector<Vec3f>          vecVertices;
+        std::vector<Array<int, 3> >  vecTriangles;
+        std::map<int, std::set<std::pair<int,int>>> ver2tri;
+        for(int i = 0; i < m_nTriangles; i++)
+        {
+            vecTriangles.push_back(m_pTriangleList[i]);
+            ver2tri[m_pTriangleList[i][0]].insert({ i,0 });
+            ver2tri[m_pTriangleList[i][1]].insert({ i,1 });
+            ver2tri[m_pTriangleList[i][2]].insert({ i,2 });
+        }
+        for(int i = 0; i < m_nVertices; ++i)
+        {
+            vecVertices.push_back(m_pVertexList[i]);
+        }
+
+
+        std::set<std::pair<int, int>> pairs;
+        Matrix *Q = new Matrix[m_nVertices];
+        for (int i = 0; i < m_nTriangles; ++i)
+        {
+            auto x = calNormal(i);
+            Matrix q = mult(x, x);
+
+            Q[m_pTriangleList[i][0]] += q;
+            Q[m_pTriangleList[i][1]] += q;
+            Q[m_pTriangleList[i][2]] += q;
+            int tx = m_pTriangleList[i][0];
+            int ty = m_pTriangleList[i][1];
+            int tz = m_pTriangleList[i][2];
+            int stx = std::max(std::max(tx, ty), tz);
+            int stz = std::min(std::min(tx, ty), tz);
+            int sty = tx + ty + tz - stx - stz;
+            pairs.insert({ stx,stz });
+            pairs.insert({ stx,sty });
+            pairs.insert({ sty,stz });
+        }
+        cmp::Q = Q;
         std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, cmp> pq;
 
         for(auto &ele: pairs)
@@ -301,7 +367,40 @@ namespace SimpleOBJ
             pq.push(ele);
         }
         
-        //for()
+        for(int i = 0; i < m_nVertices * ratio; ++i)
+        {
+            auto aim = pq.top();
+            pq.pop();
+            Vec4f newVer(0, 0, 0);
+            Matrix Q1 = Q[aim.first] + Q[aim.second];
+            calOptimal(Q1, newVer);
+            vecVertices.push_back(newVer);
+            for(auto &tri:ver2tri[aim.first])
+            {
+                vecTriangles[tri.first][tri.second] = vecVertices.end() - vecVertices.begin() - 1;
+            }
+            for (auto &tri : ver2tri[aim.second])
+            {
+                vecTriangles[tri.first][tri.second] = vecVertices.end() - vecVertices.begin() - 1;
+            }
+
+        }
+        for (auto it = vecTriangles.begin(); it != vecTriangles.end();)
+        {
+            if ((*it)[0] == (*it)[1] || (*it)[0] == (*it)[2] || (*it)[1] == (*it)[2])
+                it = vecTriangles.erase(it);
+            else
+                ++it;
+        }
+
+        CSimpleObject output;
+        output.m_nVertices = vecVertices.end() - vecVertices.begin();
+
+
+
+        output.m_pVertexList = new Vec3f[output.m_nVertices];
+        output.m_pTriangleList = new Array<int,3>[output.m_nTriangles];
+        return output;
     }
 }
 

@@ -21,6 +21,19 @@ Matrix Matrix::operator+(const Matrix& p) const
     return res;
 }
 
+void Matrix::operator+=(const Matrix& p)
+{
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            ele_[i][j] += p.ele_[i][j];
+}
+void Matrix::operator-=(const Matrix& p)
+{
+    for (int i = 0; i < 4; ++i)
+        for (int j = 0; j < 4; ++j)
+            ele_[i][j] -= p.ele_[i][j];
+}
+
 Matrix Matrix::operator-(const Matrix& p) const
 {
     Matrix res;
@@ -62,11 +75,30 @@ Vec4f Matrix::operator*(const Vec4f& p) const
     return res;
 }
 
-Matrix mult(const Vec4f& p1, const Vec4f& p2)
+double Matrix::det3(int a)
 {
-    Matrix res;
-    for (int i = 0; i < 4; ++i)
-        for (int j = 0; j < 4; ++j)
-            res.ele_[i][j] = p1[i] * p2[j];
-
+    switch (a)
+    {
+    case 3:
+        return ele_[0][0] * ele_[1][1] * ele_[2][2] - ele_[0][0] * ele_[1][2] * ele_[2][1]
+            - ele_[0][1] * ele_[1][0] * ele_[2][2] + ele_[0][1] * ele_[1][2] * ele_[2][0]
+            + ele_[0][2] * ele_[1][0] * ele_[2][1] - ele_[0][2] * ele_[1][1] * ele_[2][0];
+        break;
+    case 0:
+        return ele_[0][3] * ele_[1][1] * ele_[2][2] - ele_[0][3] * ele_[1][2] * ele_[2][1]
+            - ele_[0][1] * ele_[1][3] * ele_[2][2] + ele_[0][1] * ele_[1][2] * ele_[2][3]
+            + ele_[0][2] * ele_[1][3] * ele_[2][1] - ele_[0][2] * ele_[1][1] * ele_[2][3];
+        break;
+    case 1:
+        return ele_[0][0] * ele_[1][3] * ele_[2][2] - ele_[0][0] * ele_[1][2] * ele_[2][3]
+            - ele_[0][3] * ele_[1][0] * ele_[2][2] + ele_[0][3] * ele_[1][2] * ele_[2][0]
+            + ele_[0][2] * ele_[1][0] * ele_[2][3] - ele_[0][2] * ele_[1][3] * ele_[2][0];
+        break;
+    case 2:
+        return ele_[0][0] * ele_[1][1] * ele_[2][3] - ele_[0][0] * ele_[1][3] * ele_[2][1]
+            - ele_[0][1] * ele_[1][0] * ele_[2][3] + ele_[0][1] * ele_[1][3] * ele_[2][0]
+            + ele_[0][3] * ele_[1][0] * ele_[2][1] - ele_[0][3] * ele_[1][1] * ele_[2][0];
+        break;
+    }
+    return 0;
 }

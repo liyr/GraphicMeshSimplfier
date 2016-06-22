@@ -39,7 +39,7 @@ namespace SimpleOBJ
         void Destroy();
         bool LoadFromObj(const char* fn);
         bool SaveToObj(const char* fn);
-        void simplify(const double ratio);
+        CSimpleObject simplify(const double ratio);
 
     protected:
         bool Parse(FILE* fp);
