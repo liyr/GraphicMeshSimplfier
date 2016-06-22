@@ -8,21 +8,6 @@
 #include <set>
 #include <map>
 
-struct verPair
-{
-    verPair(const std::pair<int, int>& vp = {-1,-1}, const Vec4f& tmp =  Vec4f(0,0,0,0), double weight = -1)
-        : vp(vp),
-          tmp(tmp),
-          weight(weight)
-    {
-    }
-
-    std::pair<int, int> vp;
-    Vec4f tmp;
-    double weight;
-};
-
-
 double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
 {
     //double ans = q1.det3();
@@ -43,12 +28,17 @@ double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
 }
 
 struct cmp {
-    
-    bool operator()(const verPair &a, const verPair &b) const
+    static Matrix *Q;
+    static SimpleOBJ::Vec3f *m_pVertexList;
+    bool operator()(const std::pair<int, int> &a, const std::pair<int, int> &b) const
     {
-        return  a.weight > b.weight;
+        Matrix Q1 = Q[a.first] + Q[a.second], Q2 = Q[b.first] + Q[b.second];
+        Vec4f m(0, 0, 0), n(0, 0, 0);
+        return  calOptimal(Q1, m, m_pVertexList[a.first], m_pVertexList[a.second]) > calOptimal(Q2, m, m_pVertexList[b.first], m_pVertexList[b.second]);
     }
 };
+Matrix *cmp::Q = 0;
+SimpleOBJ::Vec3f *cmp::m_pVertexList = 0;
 
 Matrix mult(const Vec4f& p1, const Vec4f& p2)
 {
@@ -340,7 +330,6 @@ namespace SimpleOBJ
     }
 
 
-
     CSimpleObject CSimpleObject::simplify(const double ratio)
     {
         std::vector<Vec3f>          vecVertices;
@@ -359,7 +348,7 @@ namespace SimpleOBJ
         }
 
 
-        std::set<verPair> pairs;
+        std::set<std::pair<int, int>> pairs;
         Matrix *Q = new Matrix[m_nVertices];
         for (int i = 0; i < m_nTriangles; ++i)
         {
@@ -375,19 +364,13 @@ namespace SimpleOBJ
             int stx = std::max(std::max(tx, ty), tz);
             int stz = std::min(std::min(tx, ty), tz);
             int sty = tx + ty + tz - stx - stz;
-            verPair tmp1, tmp2, tmp3;
-            tmp1.vp = { stx, stz };
-            tmp1.weight = calOptimal(Q[stx] + Q[stz], tmp1.tmp, m_pVertexList[stx], m_pVertexList[stz]);
-            tmp2.vp = { stx, sty };
-            tmp2.weight = calOptimal(Q[stx] + Q[sty], tmp2.tmp, m_pVertexList[stx], m_pVertexList[sty]);
-            tmp3.vp = { sty, stz };
-            tmp3.weight = calOptimal(Q[sty] + Q[stz], tmp3.tmp, m_pVertexList[sty], m_pVertexList[stz]);
-            pairs.insert(tmp1);
-            pairs.insert(tmp2);
-            pairs.insert(tmp3);
-
+            pairs.insert({ stx,stz });
+            pairs.insert({ stx,sty });
+            pairs.insert({ sty,stz });
         }
-        std::priority_queue<verPair, std::vector<verPair>, cmp> pq;
+        cmp::Q = Q;
+        cmp::m_pVertexList = m_pVertexList;
+        std::priority_queue<std::pair<int, int>, std::vector<std::pair<int, int>>, cmp> pq;
 
         for(auto &ele: pairs)
         {
@@ -396,24 +379,23 @@ namespace SimpleOBJ
         std::set<std::pair<int, int>> empty;
         for(int i = 0; i < m_nVertices * ratio; ++i)
         {
-            verPair aim;
-            do { aim = pq.top(); } while (ver2tri[aim.vp.first] != empty && ver2tri[aim.vp.second] != empty);
+            std::pair<int, int> aim;
+            do { aim = pq.top(); } while (ver2tri[aim.first] != empty && ver2tri[aim.second] != empty);
             pq.pop();
-            vecVertices.push_back(aim.tmp);
-
-
-            for(auto &tri : ver2tri[aim.vp.first])
+            Vec4f newVer(0, 0, 0);
+            Matrix Q1 = Q[aim.first] + Q[aim.second];
+            calOptimal(Q1, newVer, vecVertices[aim.first], vecVertices[aim.second]);
+            vecVertices.push_back(newVer);
+            for(auto &tri : ver2tri[aim.first])
             {
                 vecTriangles[tri.first][tri.second] = vecVertices.end() - vecVertices.begin() - 1;
             }
-            for (auto &tri : ver2tri[aim.vp.second])
+            ver2tri[aim.first] = empty;
+            for (auto &tri : ver2tri[aim.second])
             {
                 vecTriangles[tri.first][tri.second] = vecVertices.end() - vecVertices.begin() - 1;
             }
-            ver2tri[vecVertices.end() - vecVertices.begin() - 1] = set_union(ver2tri[aim.vp.first], ver2tri[aim.vp.second]);
-            ver2tri[aim.vp.first] = empty;
-            ver2tri[aim.vp.second] = empty;
-
+            ver2tri[aim.second] = empty;
         }
         for (auto it = vecTriangles.begin(); it != vecTriangles.end();)
         {
