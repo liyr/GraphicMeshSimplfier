@@ -12,22 +12,23 @@
 
 double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
 {
-    //double ans = q1.det3();
-    //if (abs(ans) > 1e-2)
-    //{
-    //    a[0] = -q1.det3(0) / ans;
-    //    a[1] = -q1.det3(1) / ans;
-     //   a[2] = -q1.det3(2) / ans;
-    //    return a | (q1 * a);
-    //}
-    //else
-    //{
+    double ans = q1.det3();
+    if (abs(ans) > 1e-2)
+    {
+        a[0] = -q1.det3(0) / ans;
+        a[1] = -q1.det3(1) / ans;
+        a[2] = -q1.det3(2) / ans;
+        a[3] = 1;
+        return a | (q1 * a);
+    }
+    else
+    {
         a[0] = ((c + d) / 2)[0];
         a[1] = ((c + d) / 2)[1];
         a[2] = ((c + d) / 2)[2];
         a[3] = 1;
         return a | (q1 * a);
-    //}
+    }
 }
 
 
@@ -332,7 +333,7 @@ namespace SimpleOBJ
 
         bool operator< (const vertexPair& b) const
         {
-            return weight < b.weight;
+            return weight > b.weight;
         }
     };
 
@@ -394,7 +395,7 @@ namespace SimpleOBJ
             pq.push(ele);
         }
 
-        for(int i = 0; i < m_nVertices * ratio; ++i)
+        for(int i = 0; i < m_nVertices * ratio - 1; ++i)
         {
 
             vertexPair tmp;
@@ -436,14 +437,14 @@ namespace SimpleOBJ
                     judge.insert(intmp);
                 }
             }
-            for (auto &x : judge)
-                pq.push(x);
+            //for (auto &x : judge)
+            //    pq.push(x);
         }
 
 
 
 
-        for(auto it = vecTriangles.begin(); it != vecTriangles.end(); ++it)
+        for(auto it = vecTriangles.begin(); it != vecTriangles.end();)
         {
             if ((*it)[0] == (*it)[1] || (*it)[0] == (*it)[2] || (*it)[1] == (*it)[2])
                 it = vecTriangles.erase(it);
