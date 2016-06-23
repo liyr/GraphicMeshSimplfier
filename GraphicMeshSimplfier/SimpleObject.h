@@ -39,12 +39,12 @@ namespace SimpleOBJ
         void Destroy();
         bool LoadFromObj(const char* fn);
         bool SaveToObj(const char* fn);
-        CSimpleObject simplify(const double ratio);
+        Vec4f calNormal(int tri_num, std::vector<Vec3f>& vecVertices, std::vector<Array<int, 3>>& vecTriangles);
+        void simplify(const double ratio, CSimpleObject &output);
 
     protected:
         bool Parse(FILE* fp);
         bool CheckParse(int nVertices,std::vector<Array<int,3> > & vecTriangles);
-        Vec4f calNormal(int tri_num);
 
     protected:
 

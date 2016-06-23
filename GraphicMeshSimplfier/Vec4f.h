@@ -6,7 +6,7 @@ class Vec4f
 {
 public:
     float w = 1;
-    Vec4f(float x, float y, float z, float w = 1): Vec3f(x, y, z), w(w)
+    Vec4f(float x = 0, float y = 0, float z = 0, float w = 1): Vec3f(x, y, z), w(w)
     {
     }
 

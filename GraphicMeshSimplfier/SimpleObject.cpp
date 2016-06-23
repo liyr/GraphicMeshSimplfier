@@ -8,19 +8,6 @@
 #include <set>
 #include <map>
 
-struct verPair
-{
-    verPair(const std::pair<int, int>& vp = {-1,-1}, const Vec4f& tmp =  Vec4f(0,0,0,0), double weight = -1)
-        : vp(vp),
-          tmp(tmp),
-          weight(weight)
-    {
-    }
-
-    std::pair<int, int> vp;
-    Vec4f tmp;
-    double weight;
-};
 
 
 double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
@@ -38,17 +25,11 @@ double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
         a[0] = ((c + d) / 2)[0];
         a[1] = ((c + d) / 2)[1];
         a[2] = ((c + d) / 2)[2];
+        a[3] = 1;
         return a | (q1 * a);
     //}
 }
 
-struct cmp {
-    
-    bool operator()(const verPair &a, const verPair &b) const
-    {
-        return  a.weight > b.weight;
-    }
-};
 
 Matrix mult(const Vec4f& p1, const Vec4f& p2)
 {
@@ -327,11 +308,11 @@ namespace SimpleOBJ
 
     }
 
-    Vec4f CSimpleObject::calNormal(int tri_num)
+    Vec4f CSimpleObject::calNormal(int tri_num, std::vector<Vec3f> &vecVertices, std::vector<Array<int, 3>>  &vecTriangles)
     {
-        auto v0 = m_pVertexList[m_pTriangleList[tri_num][0]],
-            v1 = m_pVertexList[m_pTriangleList[tri_num][1]],
-            v2 = m_pVertexList[m_pTriangleList[tri_num][2]];
+        auto v0 = vecVertices[vecTriangles[tri_num][0]],
+            v1 = vecVertices[vecTriangles[tri_num][1]],
+            v2 = vecVertices[vecTriangles[tri_num][2]];
         Vec3f res = ((v1 - v0) % (v2 - v0));
         res.Normalize();
         double d = -res | v0;
@@ -339,83 +320,130 @@ namespace SimpleOBJ
         return ans;
     }
 
+    struct vertexPair
+    {
+        int index[2];
+        Vec4f optimal;
+        double weight;
+
+        vertexPair()
+        {
+        }
+
+        bool operator< (const vertexPair& b) const
+        {
+            return weight < b.weight;
+        }
+    };
 
 
-    CSimpleObject CSimpleObject::simplify(const double ratio)
+    void CSimpleObject::simplify(const double ratio, CSimpleObject &output)
     {
         std::vector<Vec3f>          vecVertices;
         std::vector<Array<int, 3> >  vecTriangles;
-        std::map<int, std::set<std::pair<int,int>>> ver2tri;
-        for(int i = 0; i < m_nTriangles; i++)
+        std::set<vertexPair> vecPair;
+
+        Matrix *Q = new Matrix[m_nVertices * 2];
+
+        std::map<int, std::set<int>> ver2tri;
+
+        for (int i = 0; i < m_nTriangles; ++i)
         {
             vecTriangles.push_back(m_pTriangleList[i]);
-            ver2tri[m_pTriangleList[i][0]].insert({ i,0 });
-            ver2tri[m_pTriangleList[i][1]].insert({ i,1 });
-            ver2tri[m_pTriangleList[i][2]].insert({ i,2 });
+            ver2tri[m_pTriangleList[i][0]].insert(i);
+            ver2tri[m_pTriangleList[i][1]].insert(i);
+            ver2tri[m_pTriangleList[i][2]].insert(i);
         }
-        for(int i = 0; i < m_nVertices; ++i)
+
+        for (int i = 0; i < m_nVertices; ++i)
         {
             vecVertices.push_back(m_pVertexList[i]);
         }
-
-
-        std::set<verPair> pairs;
-        Matrix *Q = new Matrix[m_nVertices];
         for (int i = 0; i < m_nTriangles; ++i)
         {
-            auto x = calNormal(i);
-            Matrix q = mult(x, x);
-
-            Q[m_pTriangleList[i][0]] += q;
-            Q[m_pTriangleList[i][1]] += q;
-            Q[m_pTriangleList[i][2]] += q;
+            Q[m_pTriangleList[i][0]] += mult(calNormal(i, vecVertices, vecTriangles), calNormal(i, vecVertices, vecTriangles));
+            Q[m_pTriangleList[i][1]] += mult(calNormal(i, vecVertices, vecTriangles), calNormal(i, vecVertices, vecTriangles));
+            Q[m_pTriangleList[i][2]] += mult(calNormal(i, vecVertices, vecTriangles), calNormal(i, vecVertices, vecTriangles));
+        }
+        for (int i = 0; i < m_nTriangles; ++i)
+        {
             int tx = m_pTriangleList[i][0];
             int ty = m_pTriangleList[i][1];
             int tz = m_pTriangleList[i][2];
             int stx = std::max(std::max(tx, ty), tz);
             int stz = std::min(std::min(tx, ty), tz);
             int sty = tx + ty + tz - stx - stz;
-            verPair tmp1, tmp2, tmp3;
-            tmp1.vp = { stx, stz };
-            tmp1.weight = calOptimal(Q[stx] + Q[stz], tmp1.tmp, m_pVertexList[stx], m_pVertexList[stz]);
-            tmp2.vp = { stx, sty };
-            tmp2.weight = calOptimal(Q[stx] + Q[sty], tmp2.tmp, m_pVertexList[stx], m_pVertexList[sty]);
-            tmp3.vp = { sty, stz };
-            tmp3.weight = calOptimal(Q[sty] + Q[stz], tmp3.tmp, m_pVertexList[sty], m_pVertexList[stz]);
-            pairs.insert(tmp1);
-            pairs.insert(tmp2);
-            pairs.insert(tmp3);
+            vertexPair tmp1, tmp2, tmp3;
+            tmp1.index[0] = stx;
+            tmp1.index[1] = stz;
+            tmp1.weight = calOptimal(Q[stx] + Q[stz], tmp1.optimal, m_pVertexList[stx], m_pVertexList[stz]);
+            tmp2.index[0] = stx;
+            tmp2.index[1] = sty;
+            tmp2.weight = calOptimal(Q[stx] + Q[sty], tmp2.optimal, m_pVertexList[stx], m_pVertexList[sty]);
+            tmp3.index[0] = sty;
+            tmp3.index[1] = stz;
+            tmp3.weight = calOptimal(Q[sty] + Q[stz], tmp3.optimal, m_pVertexList[sty], m_pVertexList[stz]);
+            vecPair.insert(tmp1);
+            vecPair.insert(tmp2);
+            vecPair.insert(tmp3);
 
         }
-        std::priority_queue<verPair, std::vector<verPair>, cmp> pq;
-
-        for(auto &ele: pairs)
+        std::priority_queue<vertexPair, std::vector<vertexPair>> pq;
+        for (auto &ele : vecPair)
         {
             pq.push(ele);
         }
-        std::set<std::pair<int, int>> empty;
+
         for(int i = 0; i < m_nVertices * ratio; ++i)
         {
-            verPair aim;
-            do { aim = pq.top(); } while (ver2tri[aim.vp.first] != empty && ver2tri[aim.vp.second] != empty);
-            pq.pop();
-            vecVertices.push_back(aim.tmp);
 
-
-            for(auto &tri : ver2tri[aim.vp.first])
+            vertexPair tmp;
+            do { tmp = pq.top(); pq.pop();
+            } while (ver2tri[tmp.index[0]].empty() || ver2tri[tmp.index[1]].empty());
+            int a = tmp.index[0], b = tmp.index[1];
+            vecVertices.push_back(tmp.optimal);
+            for(auto &m : ver2tri[tmp.index[0]])
             {
-                vecTriangles[tri.first][tri.second] = vecVertices.end() - vecVertices.begin() - 1;
+                if (vecTriangles[m][0] == tmp.index[0]) vecTriangles[m][0] = vecVertices.end() - vecVertices.begin() - 1;
+                if(vecTriangles[m][1] == tmp.index[0]) vecTriangles[m][1] = vecVertices.end() - vecVertices.begin() - 1;
+                if(vecTriangles[m][2] == tmp.index[0]) vecTriangles[m][2] = vecVertices.end() - vecVertices.begin() - 1;
+                ver2tri[vecVertices.end() - vecVertices.begin() - 1].insert(m);
+                //ver2tri[tmp.index[0]].erase(m);
             }
-            for (auto &tri : ver2tri[aim.vp.second])
+            for (auto &m : ver2tri[tmp.index[1]])
             {
-                vecTriangles[tri.first][tri.second] = vecVertices.end() - vecVertices.begin() - 1;
+                if (vecTriangles[m][0] == tmp.index[1]) vecTriangles[m][0] = vecVertices.end() - vecVertices.begin() - 1;
+                if (vecTriangles[m][1] == tmp.index[1]) vecTriangles[m][1] = vecVertices.end() - vecVertices.begin() - 1;
+                if (vecTriangles[m][2] == tmp.index[1]) vecTriangles[m][2] = vecVertices.end() - vecVertices.begin() - 1;
+                ver2tri[vecVertices.end() - vecVertices.begin() - 1].insert(m);
+                //ver2tri[tmp.index[0]].erase(m);
             }
-            ver2tri[vecVertices.end() - vecVertices.begin() - 1] = set_union(ver2tri[aim.vp.first], ver2tri[aim.vp.second]);
-            ver2tri[aim.vp.first] = empty;
-            ver2tri[aim.vp.second] = empty;
-
+            ver2tri[tmp.index[0]].clear();
+            ver2tri[tmp.index[1]].clear();
+            for (auto &m : ver2tri[vecVertices.end() - vecVertices.begin() - 1])
+            {
+                Q[vecVertices.end() - vecVertices.begin() - 1] += mult(calNormal(m, vecVertices, vecTriangles), calNormal(m, vecVertices, vecTriangles));
+            }
+            std::set<vertexPair> judge;
+            for (auto &m : ver2tri[vecVertices.end() - vecVertices.begin() - 1])
+            {
+                for (int i = 0; i < 3; ++i) 
+                {
+                    if (vecTriangles[m][i] == vecVertices.end() - vecVertices.begin() - 1) continue;
+                    vertexPair intmp;
+                    intmp.index[0] = vecVertices.end() - vecVertices.begin() - 1, intmp.index[1] = vecTriangles[m][i];
+                    intmp.weight = calOptimal(Q[intmp.index[0]] + Q[intmp.index[1]], intmp.optimal, vecVertices[intmp.index[0]], vecVertices[intmp.index[1]]);
+                    judge.insert(intmp);
+                }
+            }
+            for (auto &x : judge)
+                pq.push(x);
         }
-        for (auto it = vecTriangles.begin(); it != vecTriangles.end();)
+
+
+
+
+        for(auto it = vecTriangles.begin(); it != vecTriangles.end(); ++it)
         {
             if ((*it)[0] == (*it)[1] || (*it)[0] == (*it)[2] || (*it)[1] == (*it)[2])
                 it = vecTriangles.erase(it);
@@ -423,15 +451,16 @@ namespace SimpleOBJ
                 ++it;
         }
 
-        CSimpleObject output;
+
+
         output.m_nVertices = vecVertices.end() - vecVertices.begin();
         output.m_nTriangles = vecTriangles.end() - vecTriangles.begin();
 
 
         output.m_pVertexList = new Vec3f[output.m_nVertices];
-        output.m_pTriangleList = new Array<int,3>[output.m_nTriangles];
+        output.m_pTriangleList = new Array<int, 3>[output.m_nTriangles];
 
-        for(int i = 0; i < output.m_nVertices; ++i)
+        for (int i = 0; i < output.m_nVertices; ++i)
         {
             output.m_pVertexList[i] = vecVertices[i];
         }
@@ -439,7 +468,6 @@ namespace SimpleOBJ
         {
             output.m_pTriangleList[i] = vecTriangles[i];
         }
-        return output;
     }
 }
 
