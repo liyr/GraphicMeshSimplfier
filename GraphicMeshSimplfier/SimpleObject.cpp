@@ -13,7 +13,7 @@
 double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
 {
     double ans = q1.det3();
-    if (abs(ans) > 1e-2)
+    if (abs(ans)  > 1e-10)
     {
         a[0] = -q1.det3(0) / ans;
         a[1] = -q1.det3(1) / ans;
@@ -315,8 +315,9 @@ namespace SimpleOBJ
             v1 = vecVertices[vecTriangles[tri_num][1]],
             v2 = vecVertices[vecTriangles[tri_num][2]];
         Vec3f res = ((v1 - v0) % (v2 - v0));
+        if (res.L2Norm_Sqr() < 1e-6) return Vec4f(0, 0, 0, 0);
         res.Normalize();
-        double d = -res | v0;
+        double d = - res | v0;
         Vec4f ans(res[0], res[1], res[2], d);
         return ans;
     }
