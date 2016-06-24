@@ -8,8 +8,10 @@ int main(int argc, char *argv[])
 {
     if (argc < 3) return 0;
     SimpleOBJ::CSimpleObject input, output;
-    if (!input.LoadFromObj(argv[1])) std::cout << "error, load failed" << std::endl;
-
+    if (!input.LoadFromObj(argv[1])) {
+        std::cout << "error, load failed" << std::endl;
+        return -1;
+    }
     double ratio = atof(argv[3]);
 
 

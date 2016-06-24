@@ -27,6 +27,19 @@ public:
             return w;
     }
 
+    float operator | (const Vec4f&v) const
+    {
+        float res = 0;
+        for (int i = 0; i < 4; i++)
+            res += (*this)[i] * v[i];
+        return res;
+    }
+
+    bool Vec4f::operator == (const Vec4f&v) const
+    {
+        return (_p[0] == v[0]) && (_p[1] == v[1]) && (_p[2] == v[2]) && (_p[3] == v[3]);
+    }
+
     ~Vec4f()
     {
     }
