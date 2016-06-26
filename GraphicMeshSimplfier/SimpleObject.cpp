@@ -12,23 +12,23 @@
 
 double calOptimal(Matrix q1, Vec4f &a, SimpleOBJ::Vec3f &c, SimpleOBJ::Vec3f &d)
 {
-    double ans = q1.det3();
-    if (abs(ans)  > 1)
-    {
-        a[0] = -q1.det3(0) / ans;
-        a[1] = -q1.det3(1) / ans;
-        a[2] = -q1.det3(2) / ans;
-        a[3] = 1;
-        return a | (q1 * a);
-    }
-    else
-    {
+    //double ans = q1.det3();
+    //if (abs(ans)  > 1)
+    //{
+    //    a[0] = -q1.det3(0) / ans;
+    //    a[1] = -q1.det3(1) / ans;
+    //    a[2] = -q1.det3(2) / ans;
+    //    a[3] = 1;
+    //    return a | (q1 * a);
+    //}
+    //else
+    //{
       a[0] = ((c + d) / 2)[0];
       a[1] = ((c + d) / 2)[1];
       a[2] = ((c + d) / 2)[2];
       a[3] = 1;
       return a | (q1 * a);
-    }
+    //}
 }
 
 
@@ -434,16 +434,16 @@ namespace SimpleOBJ
 
             for(auto &m : ver2tri[tmp.index[0]])
             {
-                auto p1 = calNormal(m, vecVertices, vecTriangles);
-                auto matrix = mult(p1, p1);
+                //auto p1 = calNormal(m, vecVertices, vecTriangles);
+                //auto matrix = mult(p1, p1);
                 //Q[vecTriangles[m][0]] -= matrix;
                 //Q[vecTriangles[m][1]] -= matrix;
                 //Q[vecTriangles[m][2]] -= matrix;
                 if (vecTriangles[m][0] == tmp.index[0]) vecTriangles[m][0] = i; //else Q[vecTriangles[m][0]] -= matrix;
                 if(vecTriangles[m][1] == tmp.index[0]) vecTriangles[m][1] = i; //else Q[vecTriangles[m][1]] -= matrix;
                 if(vecTriangles[m][2] == tmp.index[0]) vecTriangles[m][2] = i; //else Q[vecTriangles[m][1]] -= matrix;
-                p1 = calNormal(m, vecVertices, vecTriangles);
-                matrix = mult(p1, p1);
+                //p1 = calNormal(m, vecVertices, vecTriangles);
+                //matrix = mult(p1, p1);
                 //Q[vecTriangles[m][0]] += matrix;
                 //Q[vecTriangles[m][1]] += matrix;
                 //Q[vecTriangles[m][2]] += matrix;
@@ -452,16 +452,16 @@ namespace SimpleOBJ
             }
             for (auto &m : ver2tri[tmp.index[1]])
             {
-                auto p1 = calNormal(m, vecVertices, vecTriangles);
-                auto matrix = mult(p1, p1);
+                //auto p1 = calNormal(m, vecVertices, vecTriangles);
+                //auto matrix = mult(p1, p1);
                 //Q[vecTriangles[m][0]] -= matrix;
                 //Q[vecTriangles[m][1]] -= matrix;
                 //Q[vecTriangles[m][2]] -= matrix;
                 if (vecTriangles[m][0] == tmp.index[1]) vecTriangles[m][0] = i; //else Q[vecTriangles[m][0]] -= matrix;
                 if (vecTriangles[m][1] == tmp.index[1]) vecTriangles[m][1] = i; //else Q[vecTriangles[m][1]] -= matrix;
                 if (vecTriangles[m][2] == tmp.index[1]) vecTriangles[m][2] = i; //else Q[vecTriangles[m][2]] -= matrix;
-                p1 = calNormal(m, vecVertices, vecTriangles);
-                matrix = mult(p1, p1);
+                //p1 = calNormal(m, vecVertices, vecTriangles);
+                //matrix = mult(p1, p1);
                 //Q[vecTriangles[m][0]] += matrix;
                 //Q[vecTriangles[m][1]] += matrix;
                 //Q[vecTriangles[m][2]] += matrix;
